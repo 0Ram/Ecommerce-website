@@ -14,16 +14,36 @@ const app = express();
 // Body parser
 app.use(express.json());
 
-// Enable CORS
+// Enable CORS - FIXED VERSION
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? 'your-frontend-domain.com' : 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',           // Local development
+    'http://localhost:3001',           // Alternative local port
+    'https://*.vercel.app',            // Any Vercel subdomain
+    'https://your-app-name.vercel.app' // Replace with your actual Vercel URL
+  ],
   credentials: true
 }));
+
+// Alternative: Allow all origins for testing (remove after testing)
+// app.use(cors({
+//   origin: '*',
+//   credentials: false
+// }));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/cart', require('./routes/cart'));
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    message: 'Server is running!', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV 
+  });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -31,10 +51,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001; // Changed to match your .env
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
 });
 
 // Seed some sample products (run once)
@@ -80,6 +101,24 @@ const seedProducts = async () => {
           stock: 25,
           rating: 4.7,
           image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=300&h=200&fit=crop'
+        },
+        {
+          name: 'Gaming Mouse',
+          description: 'High-precision gaming mouse with RGB lighting',
+          price: 79.99,
+          category: 'Electronics',
+          stock: 40,
+          rating: 4.6,
+          image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&h=200&fit=crop'
+        },
+        {
+          name: 'Coffee Mug',
+          description: 'Ceramic coffee mug with beautiful design',
+          price: 19.99,
+          category: 'Home',
+          stock: 75,
+          rating: 4.3,
+          image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=300&h=200&fit=crop'
         }
       ];
       
