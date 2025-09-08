@@ -20,7 +20,7 @@ app.use(cors({
     'http://localhost:3000',           // Local development
     'http://localhost:3001',           // Alternative local port
     'https://*.vercel.app',            // Any Vercel subdomain
-    'https://your-app-name.vercel.app' // Replace with your actual Vercel URL
+    'https://ecommerce-website-b2jn-ipck67eht-0rams-projects.vercel.app/' // Replace with your actual Vercel URL
   ],
   credentials: true
 }));
