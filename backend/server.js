@@ -16,12 +16,7 @@ app.use(express.json());
 
 // Enable CORS - FIXED VERSION
 app.use(cors({
-  origin: [
-    'http://localhost:3000',           // Local development
-    'http://localhost:3001',           // Alternative local port
-    'https://*.vercel.app',            // Any Vercel subdomain
-    'https://ecommerce-website-b2jn-ipck67eht-0rams-projects.vercel.app/' // Replace with your actual Vercel URL
-  ],
+  origin: "*",
   credentials: true
 }));
 
