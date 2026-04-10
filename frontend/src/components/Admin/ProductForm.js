@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { productsAPI } from '../../services/api';
 import { toast } from 'react-toastify';
@@ -23,14 +23,7 @@ const ProductForm = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (isEdit) {
-      loadProduct();
-    }
-  }, [id]);
-
-  const loadProduct = async () => {
+  const loadProduct = useCallback(async () => {
     try {
       const response = await productsAPI.getProduct(id);
       const p = response.data;
@@ -49,7 +42,13 @@ const ProductForm = () => {
     } finally {
       setFetching(false);
     }
-  };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    if (isEdit) {
+      loadProduct();
+    }
+  }, [isEdit, loadProduct]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
