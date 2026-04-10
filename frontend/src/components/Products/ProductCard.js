@@ -1,73 +1,66 @@
 import React from 'react';
-import { cartAPI } from '../../services/api';
+import { Link } from 'react-router-dom';
+import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { useWishlist } from '../../context/WishlistContext';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
 
 const ProductCard = ({ product }) => {
+  const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
-  const handleAddToCart = async () => {
-    if (!isAuthenticated) {
-      toast.info('Please login to add items to cart');
-      navigate('/login');
-      return;
-    }
-
+  const handleAddToCart = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) { toast.info('Please login to add to cart'); return; }
     try {
-      await cartAPI.addToCart(product._id, 1);
-      toast.success('Product added to cart!');
-      // Trigger a custom event to update cart count in header
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
-    } catch (error) {
-      toast.error('Error adding product to cart');
-      console.error('Error adding to cart:', error);
-    }
+      await addToCart(product._id, 1);
+      toast.success(`${product.name} added to cart!`);
+    } catch { toast.error('Failed to add to cart'); }
   };
 
-  const renderStars = (rating) => {
-    return [...Array(5)].map((_, index) => (
-      <span
-        key={index}
-        className={`star ${index < Math.floor(rating) ? 'filled' : ''}`}
-      >
-        ★
-      </span>
-    ));
+  const handleWishlist = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) { toast.info('Please login first'); return; }
+    try {
+      const action = await toggleWishlist(product._id);
+      toast.success(action === 'added' ? 'Added to wishlist!' : 'Removed from wishlist');
+    } catch { toast.error('Failed'); }
   };
+
+  const stars = Array.from({ length: 5 }, (_, i) => i < Math.round(product.rating) ? '★' : '☆');
 
   return (
-    <div className="product-card">
-      <div className="product-image">
-        <img src={product.image} alt={product.name} />
-        {product.stock === 0 && <div className="out-of-stock">Out of Stock</div>}
-      </div>
-      
+    <div className="product-card" id={`product-${product._id}`}>
+      <Link to={`/products/${product._id}`}>
+        <div className="product-image">
+          <img src={product.image} alt={product.name} loading="lazy" />
+          {product.stock === 0 && <span className="out-of-stock">Sold Out</span>}
+          <div className="product-actions-overlay">
+            <button className={`overlay-btn ${isWishlisted(product._id) ? 'wishlisted' : ''}`} onClick={handleWishlist} title="Wishlist">
+              {isWishlisted(product._id) ? '❤️' : '🤍'}
+            </button>
+            <button className="overlay-btn" onClick={handleAddToCart} disabled={product.stock === 0} title="Add to cart">🛒</button>
+          </div>
+        </div>
+      </Link>
       <div className="product-info">
         <div className="product-category">{product.category}</div>
-        <h3 className="product-name">{product.name}</h3>
+        <Link to={`/products/${product._id}`}><h3 className="product-name">{product.name}</h3></Link>
         <p className="product-description">{product.description}</p>
-        
         <div className="product-rating">
-          {renderStars(product.rating)}
+          {stars.map((s, i) => <span key={i} className={`star ${s === '★' ? 'filled' : ''}`}>{s}</span>)}
           <span className="rating-text">({product.rating})</span>
         </div>
-        
         <div className="product-footer">
-          <div className="product-price">${product.price}</div>
-          <button
-            onClick={handleAddToCart}
-            className="add-to-cart-btn"
-            disabled={product.stock === 0}
-          >
-            {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+          <span className="product-price">${product.price.toFixed(2)}</span>
+          <button className="add-to-cart-btn" onClick={handleAddToCart} disabled={product.stock === 0}>
+            {product.stock === 0 ? 'Sold Out' : 'Add to Cart'}
           </button>
         </div>
-        
-        <div className="product-stock">
-          {product.stock > 0 && <span>{product.stock} in stock</span>}
-        </div>
+        {product.stock > 0 && <div className="product-stock">{product.stock} in stock</div>}
       </div>
     </div>
   );

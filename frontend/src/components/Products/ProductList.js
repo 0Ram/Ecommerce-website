@@ -1,69 +1,67 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { productsAPI } from '../../services/api';
 import ProductCard from './ProductCard';
 import Filters from './Filters';
-import { toast } from 'react-toastify';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState({
-    category: 'All',
-    minPrice: '',
-    maxPrice: '',
-    search: ''
+    search: '', category: searchParams.get('category') || 'All', minPrice: '', maxPrice: ''
   });
 
   useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat) setFilters(f => ({ ...f, category: cat }));
+  }, [searchParams]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const params = {};
+        if (filters.search) params.search = filters.search;
+        if (filters.category && filters.category !== 'All') params.category = filters.category;
+        if (filters.minPrice) params.minPrice = filters.minPrice;
+        if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+        const res = await productsAPI.getProducts(params);
+        setProducts(res.data.products || []);
+      } catch (e) { console.error(e); }
+      setLoading(false);
+    };
     fetchProducts();
   }, [filters]);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const queryFilters = { ...filters };
-      if (queryFilters.category === 'All') {
-        delete queryFilters.category;
-      }
-      
-      const response = await productsAPI.getProducts(queryFilters);
-      setProducts(response.data.products);
-    } catch (error) {
-      toast.error('Error fetching products');
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-  };
-
-  if (loading) {
-    return <div className="loading">Loading products...</div>;
-  }
-
   return (
-    <div className="product-list-container">
+    <div className="container fade-in">
       <div className="page-header">
         <h2>Our Products</h2>
-        <p>Discover amazing products at great prices</p>
+        <p>Discover our curated collection of premium products</p>
       </div>
-
-      <Filters filters={filters} onFilterChange={handleFilterChange} />
-
-      <div className="products-grid">
-        {products.length > 0 ? (
-          products.map(product => (
-            <ProductCard key={product._id} product={product} />
-          ))
-        ) : (
-          <div className="no-products">
-            <p>No products found matching your criteria.</p>
-          </div>
-        )}
-      </div>
+      <Filters filters={filters} setFilters={setFilters} />
+      {loading ? (
+        <div className="products-grid">
+          {[1,2,3,4,5,6].map(i => <div key={i} className="skeleton skeleton-card" />)}
+        </div>
+      ) : products.length === 0 ? (
+        <div className="no-products">
+          <h3>No products found</h3>
+          <p>Try adjusting your filters or search term</p>
+          <button className="btn-outline" style={{marginTop:16}} onClick={() => setFilters({search:'',category:'All',minPrice:'',maxPrice:''})}>
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+        <div className="products-grid">
+          {products.map((product, index) => (
+            <div key={product._id} style={{animationDelay: `${index * 0.05}s`}}>
+              <ProductCard product={product} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

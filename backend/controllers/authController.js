@@ -28,6 +28,7 @@ const registerUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
         token: generateToken(user._id)
       });
     } else {
@@ -55,6 +56,7 @@ const loginUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
         token: generateToken(user._id)
       });
     } else {
@@ -75,4 +77,34 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, getUserProfile };
+// Get admin stats
+const getAdminStats = async (req, res) => {
+  try {
+    const Product = require('../models/Product');
+    const Order = require('../models/Order');
+    
+    const totalProducts = await Product.countDocuments();
+    const totalUsers = await User.countDocuments();
+    const totalOrders = await Order.countDocuments();
+    
+    const categories = await Product.distinct('category');
+    
+    const recentProducts = await Product.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('name price category image createdAt');
+
+    res.json({
+      totalProducts,
+      totalUsers,
+      totalOrders,
+      totalCategories: categories.length,
+      categories,
+      recentProducts
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { registerUser, loginUser, getUserProfile, getAdminStats };

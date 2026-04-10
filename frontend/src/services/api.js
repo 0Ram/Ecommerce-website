@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// const API_URL = 'http://localhost:5001/api';
-const API_URL = 'https://ecommerce-website-3-8iib.onrender.com/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -17,7 +16,7 @@ api.interceptors.request.use((config) => {
 
 // Auth API
 export const authAPI = {
-  login: (credentials) =>{ const data =api.post('/auth/login', credentials) },
+  login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
   getProfile: () => api.get('/auth/profile'),
 };
@@ -38,6 +37,21 @@ export const cartAPI = {
   updateCartItem: (productId, quantity) => api.put('/cart', { productId, quantity }),
   removeFromCart: (productId) => api.delete(`/cart/${productId}`),
   clearCart: () => api.delete('/cart'),
+};
+
+// Order API
+export const orderAPI = {
+  createOrder: (orderData) => api.post('/orders', orderData),
+  getOrders: () => api.get('/orders'),
+  getOrder: (id) => api.get(`/orders/${id}`),
+  cancelOrder: (id) => api.put(`/orders/${id}/cancel`),
+};
+
+// Wishlist API
+export const wishlistAPI = {
+  getWishlist: () => api.get('/wishlist'),
+  toggleWishlist: (productId) => api.post('/wishlist/toggle', { productId }),
+  removeFromWishlist: (productId) => api.delete(`/wishlist/${productId}`),
 };
 
 export default api;

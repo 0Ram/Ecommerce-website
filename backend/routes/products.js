@@ -7,16 +7,17 @@ const {
   deleteProduct
 } = require('../controllers/productController');
 const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 
 const router = express.Router();
 
-router.route('/')
-  .get(getProducts)
-  .post(auth, createProduct);
+// Public routes
+router.get('/', getProducts);
+router.get('/:id', getProduct);
 
-router.route('/:id')
-  .get(getProduct)
-  .put(auth, updateProduct)
-  .delete(auth, deleteProduct);
+// Admin-only routes
+router.post('/', auth, adminAuth, createProduct);
+router.put('/:id', auth, adminAuth, updateProduct);
+router.delete('/:id', auth, adminAuth, deleteProduct);
 
 module.exports = router;

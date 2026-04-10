@@ -1,93 +1,41 @@
 import React, { useState } from 'react';
 
-const categories = ['All', 'Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty'];
+const Filters = ({ filters, setFilters }) => {
+  const [showMobile, setShowMobile] = useState(false);
+  const categories = ['All', 'Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty'];
 
-const Filters = ({ filters, onFilterChange }) => {
-  const [showFilters, setShowFilters] = useState(false);
-
-  const handleFilterChange = (key, value) => {
-    const newFilters = {
-      ...filters,
-      [key]: value
-    };
-    onFilterChange(newFilters);
-  };
-
-  const clearFilters = () => {
-    onFilterChange({
-      category: 'All',
-      minPrice: '',
-      maxPrice: '',
-      search: ''
-    });
+  const handleChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <div className="filters-container">
-      <div className="filters-header">
-        <button
-          className="filters-toggle"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          Filters {showFilters ? '−' : '+'}
+      <div className="filters-header" style={{display:'none'}}>
+        <button className="filters-toggle" onClick={() => setShowMobile(!showMobile)}>
+          {showMobile ? 'Hide Filters ▲' : 'Show Filters ▼'}
         </button>
       </div>
-
-      <div className={`filters-content ${showFilters ? 'show' : ''}`}>
-        <div className="filter-group">
-          <label>Search Products</label>
-          <input
-            type="text"
-            placeholder="Search by name or description..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="filter-input"
-          />
+      <div className={`filters-content ${showMobile ? 'show' : ''}`}>
+        <div className="filter-group" style={{flex:2}}>
+          <label>Search</label>
+          <input className="filter-input" placeholder="Search products..." value={filters.search} onChange={e => handleChange('search', e.target.value)} />
         </div>
-
         <div className="filter-group">
           <label>Category</label>
-          <select
-            value={filters.category}
-            onChange={(e) => handleFilterChange('category', e.target.value)}
-            className="filter-select"
-          >
-            {categories.map(category => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
+          <select className="filter-select" value={filters.category} onChange={e => handleChange('category', e.target.value)}>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-
-        <div className="filter-row">
-          <div className="filter-group">
-            <label>Min Price ($)</label>
-            <input
-              type="number"
-              placeholder="0"
-              value={filters.minPrice}
-              onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-              className="filter-input"
-              min="0"
-            />
-          </div>
-
-          <div className="filter-group">
-            <label>Max Price ($)</label>
-            <input
-              type="number"
-              placeholder="1000"
-              value={filters.maxPrice}
-              onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-              className="filter-input"
-              min="0"
-            />
-          </div>
+        <div className="filter-group">
+          <label>Min Price</label>
+          <input className="filter-input" type="number" placeholder="$0" value={filters.minPrice} onChange={e => handleChange('minPrice', e.target.value)} />
         </div>
-
-        <button onClick={clearFilters} className="clear-filters-btn">
-          Clear All Filters
+        <div className="filter-group">
+          <label>Max Price</label>
+          <input className="filter-input" type="number" placeholder="$999" value={filters.maxPrice} onChange={e => handleChange('maxPrice', e.target.value)} />
+        </div>
+        <button className="clear-filters-btn" onClick={() => setFilters({search:'',category:'All',minPrice:'',maxPrice:''})}>
+          Clear
         </button>
       </div>
     </div>

@@ -1,75 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { cartAPI } from '../../services/api';
+import { useCart } from '../../context/CartContext';
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
-  const [cartItemsCount, setCartItemsCount] = useState(0);
-  const navigate = useNavigate();
+  const { itemCount } = useCart();
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchCartCount();
-    }
-  }, [isAuthenticated]);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-  const fetchCartCount = async () => {
-    try {
-      const response = await cartAPI.getCart();
-      const totalItems = response.data.items?.reduce((total, item) => total + item.quantity, 0) || 0;
-      setCartItemsCount(totalItems);
-    } catch (error) {
-      console.error('Error fetching cart count:', error);
-    }
-  };
+  useEffect(() => { setMenuOpen(false); }, [location]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const isActive = (path) => location.pathname === path ? 'active' : '';
+  const isAdmin = user?.role === 'admin';
 
   return (
-    <header className="header">
-      <div className="container">
-        <div className="header-content">
-          <Link to="/products" className="logo">
-            <h1>ShopNow</h1>
+    <header className={`header ${scrolled ? 'scrolled' : ''}`} id="main-header">
+      <div className="header-content">
+        <Link to="/" className="logo"><h1>ShopNow</h1></Link>
+        
+        <button className={`hamburger ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+          <span /><span /><span />
+        </button>
+
+        <nav className={`navigation ${menuOpen ? 'open' : ''}`}>
+          <Link to="/" className={`nav-link ${isActive('/')}`}>Home</Link>
+          <Link to="/products" className={`nav-link ${isActive('/products')}`}>Products</Link>
+          
+          {isAuthenticated && (
+            <>
+              <Link to="/wishlist" className={`nav-link ${isActive('/wishlist')}`}>♥ Wishlist</Link>
+              <Link to="/orders" className={`nav-link ${isActive('/orders')}`}>Orders</Link>
+            </>
+          )}
+          
+          <Link to="/cart" className={`nav-link cart-link ${isActive('/cart')}`}>
+            🛒 Cart
+            {itemCount > 0 && <span className="cart-badge">{itemCount}</span>}
           </Link>
 
-          <nav className="navigation">
-            <Link to="/products" className="nav-link">
-              Products
-            </Link>
-            
-            {isAuthenticated ? (
-              <>
-                <Link to="/cart" className="nav-link cart-link">
-                  Cart
-                  {cartItemsCount > 0 && (
-                    <span className="cart-badge">{cartItemsCount}</span>
-                  )}
+          {isAuthenticated ? (
+            <div className="user-menu">
+              {isAdmin && (
+                <Link to="/admin" className={`nav-link admin-nav-link ${isActive('/admin')}`}>
+                  ⚙️ Admin
                 </Link>
-                
-                <div className="user-menu">
-                  <span className="user-name">Welcome, {user?.name}</span>
-                  <button onClick={handleLogout} className="logout-btn">
-                    Logout
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="auth-links">
-                <Link to="/login" className="nav-link">
-                  Login
-                </Link>
-                <Link to="/signup" className="nav-link signup-link">
-                  Sign Up
-                </Link>
-              </div>
-            )}
-          </nav>
-        </div>
+              )}
+              <Link to="/profile" className="nav-link">
+                <span className="user-name">Hi, {user?.name?.split(' ')[0]}</span>
+              </Link>
+              <button className="logout-btn" onClick={logout}>Logout</button>
+            </div>
+          ) : (
+            <div className="auth-links">
+              <Link to="/login" className="nav-link">Login</Link>
+              <Link to="/signup" className="nav-link signup-link">Sign Up</Link>
+            </div>
+          )}
+        </nav>
       </div>
     </header>
   );
