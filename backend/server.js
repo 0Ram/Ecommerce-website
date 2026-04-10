@@ -17,7 +17,12 @@ app.use(express.json());
 
 // Enable CORS
 app.use(cors({
-  origin: "*",
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:3456",
+    "https://ecommerce-website-12r2.vercel.app",
+    /\.vercel\.app$/
+  ],
   credentials: true
 }));
 
