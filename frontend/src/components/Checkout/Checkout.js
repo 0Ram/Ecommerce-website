@@ -5,7 +5,7 @@ import { orderAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 
 const Checkout = () => {
-  const { items } = useCart();
+  const { items, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
@@ -29,6 +29,7 @@ const Checkout = () => {
       const res = await orderAPI.createOrder({ shippingAddress: form, paymentMethod });
       setOrderId(res.data._id);
       setOrderPlaced(true);
+      await clearCart();
       toast.success('Order placed successfully!');
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to place order'); }
     setLoading(false);

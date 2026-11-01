@@ -21,7 +21,7 @@ const createOrder = async (req, res) => {
     const { shippingAddress, paymentMethod } = req.body;
     const userId = req.user._id.toString();
 
-    // Check if DB is ready
+    // 1. Try DB first if connected
     if (mongoose.connection.readyState === 1) {
       try {
         const cart = await Cart.findOne({ user: req.user._id }).populate('items.product').maxTimeMS(2000);
@@ -59,6 +59,7 @@ const createOrder = async (req, res) => {
           cart.items = [];
           cart.totalAmount = 0;
           await cart.save();
+          cartController.clearMemoryCart(userId);
 
           return res.status(201).json(order);
         }
@@ -67,19 +68,37 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // In-memory fallback
-    const userOrders = getMemoryOrders(userId);
+    // 2. In-memory fallback: Retrieve items from user's active cart
+    const memCart = cartController.getMemoryCart(userId);
+    let items = [];
 
-    // Let's create an order from body or sample
-    const items = req.body.items || [
-      {
-        product: sampleProducts[0]._id,
-        name: sampleProducts[0].name,
-        image: sampleProducts[0].image,
-        price: sampleProducts[0].price,
-        quantity: 1
-      }
-    ];
+    if (memCart && memCart.items && memCart.items.length > 0) {
+      items = memCart.items.map(item => {
+        const prod = item.product || sampleProducts.find(p => p._id.toString() === item.product?.toString()) || {};
+        return {
+          product: prod._id || item.product,
+          name: prod.name || item.name || 'Product',
+          image: prod.image || item.image || '',
+          price: prod.price || item.price || 0,
+          quantity: item.quantity || 1
+        };
+      });
+    } else if (Array.isArray(req.body.items) && req.body.items.length > 0) {
+      items = req.body.items.map(item => {
+        const prod = sampleProducts.find(p => p._id.toString() === (item.productId || item.product || '').toString()) || {};
+        return {
+          product: prod._id || item.productId || item.product,
+          name: prod.name || item.name || 'Product',
+          image: prod.image || item.image || '',
+          price: prod.price || item.price || 0,
+          quantity: item.quantity || 1
+        };
+      });
+    }
+
+    if (items.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty. Please add items before placing an order.' });
+    }
 
     const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
     const shippingCost = subtotal > 500 ? 0 : 49;
@@ -111,8 +130,12 @@ const createOrder = async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
+    const userOrders = getMemoryOrders(userId);
     userOrders.unshift(newOrder);
     memoryOrders.set(userId, userOrders);
+
+    // Clear user's active cart after order placement
+    cartController.clearMemoryCart(userId);
 
     res.status(201).json(newOrder);
   } catch (error) {

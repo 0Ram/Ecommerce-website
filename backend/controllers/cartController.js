@@ -283,10 +283,17 @@ const clearCart = async (req, res) => {
   }
 };
 
+const clearMemoryCart = (userId) => {
+  const uid = userId.toString();
+  memoryCarts.set(uid, { user: uid, items: [], totalAmount: 0 });
+};
+
 module.exports = {
   getCart,
   addToCart,
   updateCartItem,
   removeFromCart,
-  clearCart
+  clearCart,
+  getMemoryCart,
+  clearMemoryCart
 };
