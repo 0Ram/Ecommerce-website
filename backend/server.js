@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 
@@ -42,13 +41,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/build')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend', 'build', 'index.html'));
-  });
-}
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: 'E-Commerce API is running', version: '1.0.0' });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
