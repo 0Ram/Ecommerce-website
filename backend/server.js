@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 
@@ -34,17 +35,20 @@ app.use('/api/wishlist', require('./routes/wishlist'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    message: 'Server is running!', 
+  res.json({
+    message: 'Server is running!',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV 
+    environment: process.env.NODE_ENV
   });
 });
 
-// Root route
-app.get('/', (req, res) => {
-  res.json({ message: 'E-Commerce API is running', version: '1.0.0' });
-});
+// Serve frontend in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../frontend', 'build', 'index.html'));
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -54,9 +58,25 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+});
+
+// Graceful shutdown handlers
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err.message);
+  // Don't crash the server on unhandled promise rejections
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err.message);
+  // Gracefully close the server before exiting
+  server.close(() => {
+    process.exit(1);
+  });
+  // Force exit after 10s if graceful shutdown hangs
+  setTimeout(() => process.exit(1), 10000);
 });
 
 // Seed sample products (force reseed with HD products)
@@ -374,7 +394,7 @@ const seedProducts = async () => {
         image: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=600&h=600&fit=crop&q=80'
       }
     ];
-    
+
     await Product.insertMany(sampleProducts);
     console.log(`✅ ${sampleProducts.length} HD products seeded successfully`);
   } catch (error) {
