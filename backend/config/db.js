@@ -1,39 +1,44 @@
 const mongoose = require('mongoose');
 
-const connectDB = async (retries = 5) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const conn = await mongoose.connect(process.env.MONGO_URI, {
-        serverSelectionTimeoutMS: 10000,
-        socketTimeoutMS: 45000,
-      });
-      console.log(`MongoDB Connected: ${conn.connection.host}`);
+let isConnecting = false;
 
-      // Handle connection errors after initial connect
-      mongoose.connection.on('error', (err) => {
-        console.error('MongoDB connection error:', err);
-      });
-
-      mongoose.connection.on('disconnected', () => {
-        console.warn('MongoDB disconnected. Attempting to reconnect...');
-      });
-
-      mongoose.connection.on('reconnected', () => {
-        console.log('MongoDB reconnected successfully');
-      });
-
-      return;
-    } catch (error) {
-      console.error(`MongoDB connection attempt ${i + 1}/${retries} failed:`, error.message);
-      if (i < retries - 1) {
-        const delay = Math.min(1000 * Math.pow(2, i), 30000); // Exponential backoff, max 30s
-        console.log(`Retrying in ${delay / 1000} seconds...`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
+const connectDB = async () => {
+  if (isConnecting || mongoose.connection.readyState === 1) {
+    return;
   }
-  console.error('All MongoDB connection attempts failed. Exiting...');
-  process.exit(1);
+
+  if (!process.env.MONGO_URI) {
+    console.warn('⚠️ MONGO_URI is not set. Running in fallback mode with sample products.');
+    return;
+  }
+
+  isConnecting = true;
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    isConnecting = false;
+  } catch (error) {
+    console.error(`⚠️ MongoDB connection attempt failed: ${error.message}`);
+    console.log('ℹ️ Server will continue running and serve sample products. Reconnecting in 30s...');
+    isConnecting = false;
+    setTimeout(connectDB, 30000);
+  }
 };
+
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB runtime error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected. Retrying connection in 15s...');
+  setTimeout(connectDB, 15000);
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected successfully');
+});
 
 module.exports = connectDB;

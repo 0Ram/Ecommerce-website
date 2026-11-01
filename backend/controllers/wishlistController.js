@@ -3,13 +3,14 @@ const Wishlist = require('../models/Wishlist');
 // Get user wishlist
 const getWishlist = async (req, res) => {
   try {
-    let wishlist = await Wishlist.findOne({ user: req.user._id }).populate('products');
+    let wishlist = await Wishlist.findOne({ user: req.user._id }).populate('products').maxTimeMS(3000);
     if (!wishlist) {
       wishlist = { products: [] };
     }
     res.json(wishlist);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.warn('Wishlist fetch fallback:', error.message);
+    res.json({ products: [] });
   }
 };
 
